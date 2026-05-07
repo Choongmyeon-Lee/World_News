@@ -19,6 +19,8 @@ on:
 permissions:
   contents: write   # 보고서 파일 commit & push
   issues: write     # 실패 시 자동 issue 생성
+  id-token: write   # claude-code-action OIDC 토큰 발급
+  pull-requests: write  # agent 모드에서 PR 작성 시 필요
 
 concurrency:
   group: daily-news
@@ -46,11 +48,10 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           # Max 구독 사용. 로컬에서 `claude setup-token`으로 발급한 토큰을 GitHub Secrets에 등록.
-          # API 키 사용 시 별도 결제이므로 Max 구독자는 OAuth 방식 권장.
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # claude-code-action 버전에 따라 파라미터명이 prompt | direct_prompt 일 수 있음.
-          # README의 "GitHub Actions 자동화" 섹션 참고.
-          prompt: |
+          # cron / workflow_dispatch 자동 실행은 'agent' 모드 사용.
+          mode: agent
+          direct_prompt: |
             오늘은 ${{ env.REPORT_DATE_KST }} (KST). 자동 실행이며 사용자 상호작용 없음.
 
             `.claude/skills/daily-news-curate/SKILL.md` 의 daily-news-curate 스킬을 실행하여
@@ -63,20 +64,8 @@ jobs:
 
             결과 파일: reports/${{ env.REPORT_DATE_KST }}.md
             모든 결정은 합리적 기본값으로 자동 처리.
-          allowed_tools: |
-            Bash
-            Read
-            Write
-            Edit
-            WebSearch
-            WebFetch
-            Agent
-            TeamCreate
-            TeamDelete
-            TaskCreate
-            TaskUpdate
-            SendMessage
-            Skill
+          # claude-code-action agent 모드는 도구 자동 허용. allowed_tools 입력 미사용.
+          # 추가 도구가 필요하면 claude_args로 전달.
 
       - name: Verify report was created
         id: verify

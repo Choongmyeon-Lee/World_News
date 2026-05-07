@@ -25,3 +25,4 @@
 |------|----------|------|------|
 | 2026-05-07 | 초기 구성 | 전체 | 미국 주식 투자 정보용 데일리 국제정세 브리핑 자동화 |
 | 2026-05-07 | OAuth 토큰 방식으로 변경 | workflow + README | Max 구독 한도 내 사용 (별도 API 결제 회피) |
+| 2026-05-07 | workflow 입력 schema 수정 | daily-news.yml | claude-code-action v1: prompt→direct_prompt, mode: agent 추가, id-token: write 권한 추가 |
