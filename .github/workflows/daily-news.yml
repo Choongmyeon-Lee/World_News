@@ -1,0 +1,117 @@
+name: Daily News Curation
+
+on:
+  schedule:
+    # KST 07:00 = UTC 22:00 (전일). GitHub Actions cron은 정시 실행이 보장되지 않아 5~15분 지연될 수 있음.
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '실행 모드 (full=처음부터 / verify_only=검증부터 / report_only=보고서만)'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - verify_only
+          - report_only
+
+permissions:
+  contents: write   # 보고서 파일 commit & push
+  issues: write     # 실패 시 자동 issue 생성
+
+concurrency:
+  group: daily-news
+  cancel-in-progress: false
+
+jobs:
+  curate:
+    name: Curate international news
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup timezone (KST display in logs)
+        run: |
+          echo "UTC: $(date -u)"
+          echo "KST: $(TZ='Asia/Seoul' date)"
+          echo "REPORT_DATE_KST=$(TZ='Asia/Seoul' date +%Y-%m-%d)" >> "$GITHUB_ENV"
+
+      - name: Run daily-news-curate skill
+        uses: anthropics/claude-code-action@beta
+        with:
+          # Max 구독 사용. 로컬에서 `claude setup-token`으로 발급한 토큰을 GitHub Secrets에 등록.
+          # API 키 사용 시 별도 결제이므로 Max 구독자는 OAuth 방식 권장.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # claude-code-action 버전에 따라 파라미터명이 prompt | direct_prompt 일 수 있음.
+          # README의 "GitHub Actions 자동화" 섹션 참고.
+          prompt: |
+            오늘은 ${{ env.REPORT_DATE_KST }} (KST). 자동 실행이며 사용자 상호작용 없음.
+
+            `.claude/skills/daily-news-curate/SKILL.md` 의 daily-news-curate 스킬을 실행하여
+            직전 24시간 KST 국제정세 뉴스를 수집·교차검증·시장영향 분석·보고서 작성하라.
+
+            모드: ${{ github.event.inputs.mode || 'full' }}
+            - full: Phase 0부터 전체 실행
+            - verify_only: 기존 _workspace/01_collected.json 사용, Phase 3부터 시작
+            - report_only: 기존 _workspace/03_analyzed.json 사용, Phase 5만 실행
+
+            결과 파일: reports/${{ env.REPORT_DATE_KST }}.md
+            모든 결정은 합리적 기본값으로 자동 처리.
+          allowed_tools: |
+            Bash
+            Read
+            Write
+            Edit
+            WebSearch
+            WebFetch
+            Agent
+            TeamCreate
+            TeamDelete
+            TaskCreate
+            TaskUpdate
+            SendMessage
+            Skill
+
+      - name: Verify report was created
+        id: verify
+        run: |
+          REPORT="reports/${REPORT_DATE_KST}.md"
+          if [ -f "$REPORT" ] || ls reports/${REPORT_DATE_KST}_v*.md >/dev/null 2>&1; then
+            echo "report_exists=true" >> "$GITHUB_OUTPUT"
+            echo "REPORT 생성 확인: $(ls reports/${REPORT_DATE_KST}*.md)"
+          else
+            echo "report_exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::보고서 파일이 생성되지 않았습니다: $REPORT"
+          fi
+
+      - name: Commit & push report
+        if: steps.verify.outputs.report_exists == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/
+          if git diff --staged --quiet; then
+            echo "변경 사항 없음 — commit skip"
+          else
+            git commit -m "report: ${REPORT_DATE_KST} 국제정세 데일리 브리핑"
+            git push
+          fi
+
+      - name: Open issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[자동] ${process.env.REPORT_DATE_KST} 데일리 뉴스 실행 실패`,
+              body: `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n자동 보고서 생성에 실패했습니다. 위 링크에서 로그를 확인하세요.`,
+              labels: ['daily-news', 'automation-failure']
+            });

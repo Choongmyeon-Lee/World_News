@@ -1,0 +1,10 @@
+# Workspace intermediate artifacts (collector/verifier/analyst raw JSON)
+_workspace/
+!_workspace/.gitkeep
+
+# Local prompt scratchpad
+Prompt
+
+# OS
+.DS_Store
+Thumbs.db
