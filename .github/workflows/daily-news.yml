@@ -44,40 +44,28 @@ jobs:
           echo "KST: $(TZ='Asia/Seoul' date)"
           echo "REPORT_DATE_KST=$(TZ='Asia/Seoul' date +%Y-%m-%d)" >> "$GITHUB_ENV"
 
-      # ── 임시 디버그: OAuth 토큰 형식 검증 (값 자체는 노출하지 않음)
-      - name: Debug — validate OAuth token format
+      # GitHub Secret 입력 시 끝에 줄바꿈/공백이 자동으로 끼어드는 케이스 방어.
+      # HTTP 헤더에 들어갈 토큰에 \r\n\t 등이 포함되면 'invalid header value' 에러.
+      - name: Sanitize OAuth token (strip whitespace)
+        id: token
         env:
-          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          RAW: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          if [ -z "$TOKEN" ]; then
-            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret이 비어있거나 미등록 상태입니다."
+          if [ -z "$RAW" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret이 비어있습니다. 등록 후 다시 시도하세요."
             exit 1
           fi
-          LEN=$(printf '%s' "$TOKEN" | wc -c)
-          NL_COUNT=$(printf '%s' "$TOKEN" | tr -cd '\n' | wc -c)
-          CR_COUNT=$(printf '%s' "$TOKEN" | tr -cd '\r' | wc -c)
-          SP_COUNT=$(printf '%s' "$TOKEN" | tr -cd ' ' | wc -c)
-          TAB_COUNT=$(printf '%s' "$TOKEN" | tr -cd '\t' | wc -c)
-          NON_ASCII=$(printf '%s' "$TOKEN" | LC_ALL=C grep -c '[^[:print:]]' || true)
-          STARTS_WITH_OAT=$(printf '%s' "$TOKEN" | head -c 13 | grep -c 'sk-ant-oat' || true)
-          STARTS_WITH_API=$(printf '%s' "$TOKEN" | head -c 13 | grep -c 'sk-ant-api' || true)
-          echo "Token length: $LEN"
-          echo "Newline (LF) count: $NL_COUNT"
-          echo "Carriage return (CR) count: $CR_COUNT"
-          echo "Space count: $SP_COUNT"
-          echo "Tab count: $TAB_COUNT"
-          echo "Non-printable char count: $NON_ASCII"
-          echo "Starts with 'sk-ant-oat' (OAuth): $STARTS_WITH_OAT"
-          echo "Starts with 'sk-ant-api' (API key, wrong type): $STARTS_WITH_API"
-          if [ "$NL_COUNT" -gt 0 ] || [ "$CR_COUNT" -gt 0 ] || [ "$SP_COUNT" -gt 0 ] || [ "$TAB_COUNT" -gt 0 ] || [ "$NON_ASCII" -gt 0 ]; then
-            echo "::warning::토큰에 줄바꿈/공백/비인쇄문자가 포함되어 있습니다. HTTP 헤더로 invalid."
-          fi
+          CLEAN=$(printf '%s' "$RAW" | tr -d '\r\n\t ')
+          # 정제된 값도 로그 마스킹에 포함시켜 노출 방지
+          echo "::add-mask::$CLEAN"
+          echo "value=$CLEAN" >> "$GITHUB_OUTPUT"
 
       - name: Run daily-news-curate skill
         uses: anthropics/claude-code-action@beta
         with:
           # Max 구독 사용. 로컬에서 `claude setup-token`으로 발급한 토큰을 GitHub Secrets에 등록.
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # 위 sanitize step에서 trailing whitespace 제거된 값을 사용.
+          claude_code_oauth_token: ${{ steps.token.outputs.value }}
           # cron / workflow_dispatch 자동 실행은 'agent' 모드 사용.
           mode: agent
           direct_prompt: |
