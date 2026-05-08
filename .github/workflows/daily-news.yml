@@ -126,11 +126,32 @@ jobs:
             모드: ${{ github.event.inputs.mode || 'full' }}
             결과 파일: reports/${{ env.REPORT_DATE_KST }}.md (이미 존재 시 _v2/_v3 접미사)
 
+            ## ⚠️ Watchlist 섹션 누락 절대 금지
+
+            raw_news.json의 `watchlist.{TICKER}.items`에 항목이 있다 (이전 실행에서 290건 수집된 사례). **반드시** 모든 watchlist 종목(AAPL, 005930.KS, NVDA, MSFT, AMD, TSLA, ^GSPC, ^IXIC)을 검토하고 보고서에 "## 관심 종목 뉴스" 섹션을 작성할 것.
+
+            - 게재 기준 (사용자 명시 요구 "겹치는 내용만 올림"): Tier 1-2 매체 2개 이상이 같은 사건을 보도한 경우만. 단일 매체 단독은 LOW로 분류하고 종목 sub-section엔 게재 안 함.
+            - 모든 종목이 0건이어도 섹션 헤더는 남기고 "검토 결과: 신뢰도 높은 종목별 사건 없음 (검토 항목: AAPL, NVDA, ...)" 1줄로라도 적을 것.
+
+            ## ⚠️ 보고서 서술 스타일
+
+            **불릿 위주의 짧은 나열은 가독성이 떨어진다.** 각 사건은 다음 3 단락으로 풀어쓸 것:
+            - 단락 1 (사실): 3~5 문장 평서문. 핵심 수치는 본문 문장에 직접 박는다.
+            - 단락 2 (시장 영향): 3~5 문장. 섹터·티커 영향과 영향 경로를 줄글로.
+            - 단락 3 (반사실 + 가격 반영도): 1~3 문장.
+
+            이후 보조 정보(시간 지평, 수혜/부담 티커)만 불릿 1~3개로 표시.
+            각 사건 끝에 출처 표기: "_출처: Reuters, Bloomberg, FT — [Reuters](URL)_"
+
+            ## ⚠️ 출처 표기 정확성
+
+            보고서에 "Google News RSS"라고 적지 말 것. Google News는 단순 aggregator이며 실제 출처는 source 필드의 매체명(Reuters/Bloomberg/FT/CNBC 등)이다. 출처 부록 표의 URL은 raw_news.json의 link 필드를 그대로 사용.
+
             ## 보고서 마지막에 "## 검증 메타" 섹션 추가
 
-            - 입력 raw_news.json: 카테고리 N건 / watchlist M건 (raw 입력)
+            - 입력 raw_news.json: 카테고리 N건 / watchlist M건
             - 보고서 게재: HIGH X / MEDIUM Y / LOW Z / DROP W
-            - 출처 매체 수 (unique)
+            - 출처 매체 수 (unique, 매체명 리스트)
             - 학습 데이터 보완: 0건 (원칙적으로 0이어야 함)
           # claude-code-action agent 모드는 도구 자동 허용. allowed_tools 입력 미사용.
           # 추가 도구가 필요하면 claude_args로 전달.
