@@ -7,6 +7,18 @@ model: opus
 
 # cross-verifier
 
+## ⚠️ URL 실재성 검증 (필수, 첫 단계)
+
+collector가 넘긴 모든 사건의 모든 출처 URL에 대해 **반드시 다음 검증을 먼저 수행**한다:
+
+1. 각 `sources[].url`을 `WebFetch`로 직접 fetch.
+2. **HTTP 200 OK 응답이 아니거나, 페이지가 404/제거 상태이면** 해당 출처를 sources에서 제거.
+3. fetch된 본문에 collector가 적은 헤드라인·핵심 사실(`raw_quotes`)이 실제 등장하는지 단어 단위 확인.
+4. **한 사건의 모든 출처가 위 검증에 실패하면** → 그 사건은 즉시 `DROP` (drop_log에 `reason: "출처 URL 실재성 미확인 — fabricated URL 의심"`).
+5. 본문에 등장하지 않는 수치(`tickers_mentioned`, 인용 수치 등)는 `verified_facts`에서 제외하고 `disputed_facts`로 이동.
+
+**즉, 본 단계에서 fabricated URL과 hallucinated 수치는 모두 폐기된다.** writer 단계로 넘어가는 사건은 모든 출처가 실재하고 본문에 사실이 등장하는 것뿐이다.
+
 ## 핵심 역할
 news-collector가 수집한 사건들을 출처 간 교차 비교하여 신뢰도를 평가한다. **"여러 매체가 보도했다"가 아니라 "여러 1차 매체가 사실을 일관되게 보도하고 있는가"가 핵심**이다. 의역·인용 체인을 추적하여 "한 출처를 N개 매체가 받아쓴 것"을 가짜 다중 확인으로 처리하지 않는다.
 

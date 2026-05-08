@@ -28,3 +28,4 @@
 | 2026-05-07 | workflow 입력 schema 수정 | daily-news.yml | claude-code-action v1: prompt→direct_prompt, mode: agent 추가, id-token: write 권한 추가 |
 | 2026-05-08 | OAuth 토큰 sanitize step 추가 | daily-news.yml | GitHub Secret 입력 시 끼어드는 trailing newline 자동 제거 (HTTP 헤더 invalid 에러 방지) |
 | 2026-05-08 | watchlist 기능 추가 | watchlist.yaml + 4개 에이전트 + 오케스트레이터 + 템플릿 | 사용자 관심 종목·지수에 대한 추가 뉴스 수집/분석/보고. 0건이면 섹션 생략 |
+| 2026-05-08 | anti-hallucination 가드레일 대폭 강화 | 4개 에이전트 + workflow direct_prompt + 기존 보고서 2개 unreliable 헤더 | 첫 두 보고서가 학습 데이터로 hallucinated 수치(NASDAQ ~17,500 vs 실제 25,806)와 fabricated URL 다수 포함. URL 실재성 검증(WebFetch 200 OK) + verified_facts 외 수치 인용 금지 + 보고서에 검증 메타 섹션 추가 강제 |
