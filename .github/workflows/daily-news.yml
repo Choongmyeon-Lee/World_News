@@ -44,6 +44,35 @@ jobs:
           echo "KST: $(TZ='Asia/Seoul' date)"
           echo "REPORT_DATE_KST=$(TZ='Asia/Seoul' date +%Y-%m-%d)" >> "$GITHUB_ENV"
 
+      # ── 임시 디버그: OAuth 토큰 형식 검증 (값 자체는 노출하지 않음)
+      - name: Debug — validate OAuth token format
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret이 비어있거나 미등록 상태입니다."
+            exit 1
+          fi
+          LEN=$(printf '%s' "$TOKEN" | wc -c)
+          NL_COUNT=$(printf '%s' "$TOKEN" | tr -cd '\n' | wc -c)
+          CR_COUNT=$(printf '%s' "$TOKEN" | tr -cd '\r' | wc -c)
+          SP_COUNT=$(printf '%s' "$TOKEN" | tr -cd ' ' | wc -c)
+          TAB_COUNT=$(printf '%s' "$TOKEN" | tr -cd '\t' | wc -c)
+          NON_ASCII=$(printf '%s' "$TOKEN" | LC_ALL=C grep -c '[^[:print:]]' || true)
+          STARTS_WITH_OAT=$(printf '%s' "$TOKEN" | head -c 13 | grep -c 'sk-ant-oat' || true)
+          STARTS_WITH_API=$(printf '%s' "$TOKEN" | head -c 13 | grep -c 'sk-ant-api' || true)
+          echo "Token length: $LEN"
+          echo "Newline (LF) count: $NL_COUNT"
+          echo "Carriage return (CR) count: $CR_COUNT"
+          echo "Space count: $SP_COUNT"
+          echo "Tab count: $TAB_COUNT"
+          echo "Non-printable char count: $NON_ASCII"
+          echo "Starts with 'sk-ant-oat' (OAuth): $STARTS_WITH_OAT"
+          echo "Starts with 'sk-ant-api' (API key, wrong type): $STARTS_WITH_API"
+          if [ "$NL_COUNT" -gt 0 ] || [ "$CR_COUNT" -gt 0 ] || [ "$SP_COUNT" -gt 0 ] || [ "$TAB_COUNT" -gt 0 ] || [ "$NON_ASCII" -gt 0 ]; then
+            echo "::warning::토큰에 줄바꿈/공백/비인쇄문자가 포함되어 있습니다. HTTP 헤더로 invalid."
+          fi
+
       - name: Run daily-news-curate skill
         uses: anthropics/claude-code-action@beta
         with:
