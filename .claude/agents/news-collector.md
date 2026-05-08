@@ -21,8 +21,14 @@ model: opus
 7. **검색 결과가 부족하면 빈 events 반환** — 학습 데이터로 채우는 것보다 "수집 사건 0건" 보고가 훨씬 낫다.
 8. **모든 raw_quotes는 WebFetch 본문에서 그대로 복사된 직접 인용**이어야 한다. 의역·재구성 금지.
 
+## 입력 소스 변경 (2026-05-08~)
+
+본 환경에서 WebSearch/WebFetch는 비활성화되어 있다. 대신 **GitHub Actions의 Python step (`scripts/fetch_news.py`)이 Google News RSS로 24시간 내 뉴스를 미리 fetch하여 `_workspace/raw_news.json`에 저장**한다. 본 에이전트의 역할은 그 raw 데이터를 **사건 단위로 정리·중복 제거**하여 events[]로 변환하는 것이다.
+
+직접 검색 시도 금지. `Read` 도구로 `_workspace/raw_news.json`을 읽고, 그 안의 항목만으로 작업한다.
+
 ## 핵심 역할
-직전 24시간(한국시간 기준) 동안 발생한 국제정세 뉴스를 다수 신뢰 매체에서 수집한다. 사건(event) 단위로 그룹핑하여, 같은 사건을 보도한 N개 매체의 출처를 함께 묶는다. 미국 주식 시장 영향 가능성이 있는 카테고리에 한정한다:
+GitHub Actions Python step이 미리 수집한 뉴스를 사건(event) 단위로 묶어 정리한다. 사건(event) 단위로 그룹핑하여, 같은 사건을 보도한 N개 매체의 출처를 함께 묶는다. 미국 주식 시장 영향 가능성이 있는 카테고리에 한정한다:
 
 1. **지정학·전쟁·외교** (분쟁, 제재, 정상회담)
 2. **통화정책·금리·인플레이션** (Fed/ECB/BOJ 발언, CPI/PPI/PCE 발표)

@@ -7,17 +7,17 @@ model: opus
 
 # cross-verifier
 
-## ⚠️ URL 실재성 검증 (필수, 첫 단계)
+## URL 출처는 RSS로 검증된 것 (2026-05-08~)
 
-collector가 넘긴 모든 사건의 모든 출처 URL에 대해 **반드시 다음 검증을 먼저 수행**한다:
+본 환경에서 WebFetch는 비활성화되어 있고, 모든 사건의 출처 URL은 Python step의 Google News RSS feed에서 직접 받은 실재 링크다. 따라서 **별도의 URL 200 OK 검증은 생략**하고, 다음 절차로 신뢰도를 평가한다:
 
-1. 각 `sources[].url`을 `WebFetch`로 직접 fetch.
-2. **HTTP 200 OK 응답이 아니거나, 페이지가 404/제거 상태이면** 해당 출처를 sources에서 제거.
-3. fetch된 본문에 collector가 적은 헤드라인·핵심 사실(`raw_quotes`)이 실제 등장하는지 단어 단위 확인.
-4. **한 사건의 모든 출처가 위 검증에 실패하면** → 그 사건은 즉시 `DROP` (drop_log에 `reason: "출처 URL 실재성 미확인 — fabricated URL 의심"`).
-5. 본문에 등장하지 않는 수치(`tickers_mentioned`, 인용 수치 등)는 `verified_facts`에서 제외하고 `disputed_facts`로 이동.
+1. **다중 매체 보도 = additional_sources 길이로 카운트.** raw_news.json의 각 항목에는 같은 헤드라인의 다른 매체들이 `additional_sources[]`에 묶여있음.
+2. **Tier 분포 확인.** 1차 통신사(tier 1: Reuters, AP, Bloomberg, AFP)가 보도하면 신뢰도 高.
+3. **summary 필드의 사실만 verified_facts로 인용 가능.** summary는 600자로 잘려있으므로, 그 안에 있는 사실만 안전. 임의 추정 금지.
+4. **헤드라인이 의견·전망·추측("could", "may", "expected") 위주이면 사건이 아닌 의견** — DROP 또는 LOW.
+5. **한국 매체 단독 보도 + 영문 매체 0건이면 LOW로 강등** (제시된 신뢰 매체 리스트의 원칙 유지).
 
-**즉, 본 단계에서 fabricated URL과 hallucinated 수치는 모두 폐기된다.** writer 단계로 넘어가는 사건은 모든 출처가 실재하고 본문에 사실이 등장하는 것뿐이다.
+학습 데이터로 추가 사실을 보완하는 행위는 절대 금지. raw_news.json 항목에 없는 인용·수치·인물명은 사용하지 않는다.
 
 ## 핵심 역할
 news-collector가 수집한 사건들을 출처 간 교차 비교하여 신뢰도를 평가한다. **"여러 매체가 보도했다"가 아니라 "여러 1차 매체가 사실을 일관되게 보도하고 있는가"가 핵심**이다. 의역·인용 체인을 추적하여 "한 출처를 N개 매체가 받아쓴 것"을 가짜 다중 확인으로 처리하지 않는다.

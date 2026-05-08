@@ -69,12 +69,14 @@ TeamCreate(
 
 > 모든 Agent/팀원 호출에 `model: "opus"` 명시. 환경변수 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 활성 시 IDE에 팀원별 메시지가 시각화됨.
 
-### Phase 2: 수집
+### Phase 2: 수집 (raw_news.json 변환)
+
+> **2026-05-08~ 변경:** WebSearch/WebFetch 비활성 환경 대응. 뉴스는 GitHub Actions의 Python step(`scripts/fetch_news.py`)이 Google News RSS로 미리 fetch하여 `_workspace/raw_news.json`에 저장. collector는 이 파일을 읽어 events[]로 변환만 수행.
 
 `TaskCreate`로 collector에 작업 부여:
 
-- 입력: 시간창(직전 24시간 KST), 카테고리 4개, **`watchlist.yaml`**, 어제 보고서 경로(있으면)
-- 작업: 카테고리 뉴스 수집 후 watchlist 종목별 추가 검색. 중복 사건은 같은 `event_id` 유지 + `affects_watchlist` 필드 표시.
+- 입력: `_workspace/raw_news.json`, **`watchlist.yaml`**, 어제 보고서 경로(있으면)
+- 작업: raw_news.json의 카테고리·watchlist 항목을 읽어 의미적 중복 제거 후 events[] 생성. 같은 사건이 여러 카테고리/watchlist에 나오면 `event_id` 통합 + `affects_watchlist` 표시.
 - 산출물: `_workspace/01_collected.json`
 - 완료 신호: `TaskUpdate(status: "completed", message: "산출물 경로")`
 
