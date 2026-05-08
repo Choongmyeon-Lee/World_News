@@ -1,0 +1,68 @@
+# 관심 종목·지수 리스트
+#
+# - 매일 보고서에 별도 섹션("관심 종목 뉴스")으로 정리됩니다.
+# - 신뢰도 HIGH/MEDIUM 뉴스가 24시간 내 있을 때만 해당 종목이 보고서에 게재됩니다.
+# - 모든 종목이 0건이면 "관심 종목 뉴스" 섹션 자체가 생략됩니다.
+# - 카테고리(통화정책/지정학/무역/원자재) 뉴스와 중복되는 사건은 카테고리에 1회만 게재되고
+#   관심 종목 섹션에는 "→ 카테고리 X 참조"로 표시됩니다.
+#
+# 종목 추가/삭제 시 이 파일만 수정하면 됩니다. 다음 자동 실행부터 반영됩니다.
+#
+# 필드 설명:
+#   name      : 표준 표기 (영문 정식 명칭 권장)
+#   ticker    : 종목 코드 (미국 NYSE/NASDAQ 또는 한국 KRX, 지수는 ^로 시작)
+#   aliases   : 검색 시 사용할 추가 표현 (한글명, 통상 표현 등)
+#   type      : stock | index | etf | commodity
+#   market    : US | KR | JP | EU | GLOBAL
+#   notes     : (선택) 검색 시 우선시할 토픽 메모
+
+watchlist:
+  - name: Apple
+    ticker: AAPL
+    aliases: [애플, Apple Inc]
+    type: stock
+    market: US
+
+  - name: Samsung Electronics
+    ticker: "005930.KS"
+    aliases: [삼성전자, Samsung]
+    type: stock
+    market: KR
+    notes: "한국 매체도 보조 출처로 인정. 단, 영문 매체 교차확인 우선."
+
+  - name: NVIDIA
+    ticker: NVDA
+    aliases: [엔비디아]
+    type: stock
+    market: US
+    notes: "AI 칩, 데이터센터, 수출통제 관련 뉴스 가중치 높음"
+
+  - name: Microsoft
+    ticker: MSFT
+    aliases: [MS, 마이크로소프트, Microsoft Corp]
+    type: stock
+    market: US
+
+  - name: AMD
+    ticker: AMD
+    aliases: [Advanced Micro Devices, 에이엠디]
+    type: stock
+    market: US
+
+  - name: Tesla
+    ticker: TSLA
+    aliases: [테슬라]
+    type: stock
+    market: US
+
+  - name: S&P 500 Index
+    ticker: "^GSPC"
+    aliases: [S&P500, "S&P 500", 에스앤피500, SPX]
+    type: index
+    market: US
+
+  - name: NASDAQ Composite
+    ticker: "^IXIC"
+    aliases: [나스닥, NASDAQ, "Nasdaq Composite"]
+    type: index
+    market: US

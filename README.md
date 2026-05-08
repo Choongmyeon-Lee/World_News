@@ -7,6 +7,7 @@
 ```
 News/
 ├── CLAUDE.md                       # 하네스 포인터
+├── watchlist.yaml                  # 관심 종목·지수 리스트 (사용자가 직접 편집)
 ├── .claude/
 │   ├── agents/                     # 4개 전문 에이전트 정의
 │   │   ├── news-collector.md
@@ -26,6 +27,17 @@ News/
     ├── 02_verified.json
     └── 03_analyzed.json
 ```
+
+## 관심 종목 추가/삭제
+
+[watchlist.yaml](watchlist.yaml)을 편집하면 다음 자동 실행부터 반영됩니다. 보고서에 "관심 종목 뉴스" 섹션이 추가되며 — **신뢰도 HIGH/MEDIUM 뉴스가 있는 종목만 게재되고, 0건이면 종목 자체가 생략, 모든 종목 0건이면 섹션 전체가 생략**됩니다.
+
+기본 등록 종목·지수:
+- 미국: Apple, NVIDIA, Microsoft, AMD, Tesla
+- 한국: 삼성전자
+- 지수: S&P 500, NASDAQ Composite
+
+종목 추가 시 `name`, `ticker`, `aliases` 3개만 필수. `notes`로 검색 시 가중치 줄 토픽을 적을 수 있습니다 (예: NVIDIA의 "AI 칩, 수출통제").
 
 ## 워크플로우
 

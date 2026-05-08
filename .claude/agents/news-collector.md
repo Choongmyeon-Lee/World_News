@@ -38,6 +38,27 @@ model: opus
 ## 입력
 - 실행 시각 (UTC, KST 변환 필요)
 - 어제 자 보고서가 있으면 `reports/YYYY-MM-DD.md` 경로로 전달됨 — 중복/후속 보도 식별용
+- **`watchlist.yaml`** (repo 루트) — 사용자 관심 종목·지수 리스트. 각 항목별로 24시간 내 뉴스를 추가 수집한다.
+
+## Watchlist 수집 규칙
+
+기존 4 카테고리 뉴스를 다 수집한 후, `watchlist.yaml`을 읽어 각 종목·지수에 대해 추가 수집:
+
+1. **검색 키워드 조합:** 각 항목의 `name`, `ticker`, `aliases`를 OR로 묶어 검색. 추가로 `stock`, `earnings`, `guidance`, `upgrade`, `downgrade`, `lawsuit`, `acquisition`, `regulation` 같은 시장 영향성 단어 결합.
+2. **시간창 동일:** 직전 24시간(KST) 기준.
+3. **검색 매체 우선순위:**
+   - **개별 종목 (US):** Reuters Markets, Bloomberg, WSJ Markets, FT Markets, CNBC, MarketWatch, Barron's, SEC filings(8-K, 10-Q)
+   - **개별 종목 (KR, 예: 삼성전자):** 영문 매체 우선(Reuters, FT, Nikkei Asia, Bloomberg). 한국 매체는 보조(연합뉴스 영문, Korea Herald, Korea JoongAng Daily). 한국어 매체 단독 출처는 LOW로 분류 가능.
+   - **지수 (S&P 500, NASDAQ):** Reuters/Bloomberg/CNBC/MarketWatch 시장 마감/시초 리포트. 단순 시세 변동만의 뉴스는 제외 — "왜 움직였는가"의 근본 사건이 있는 보도만 수집.
+4. **사건이 카테고리와 중복되면 별도 사건으로 만들지 말고 같은 `event_id` 유지** — `affects_watchlist` 필드에 해당 종목 추가.
+5. **수집 결과 0건은 정상 결과** — watchlist 항목 중 24시간 내 보도가 없는 종목은 빈 리스트로 두면 됨. 억지로 채우지 말 것.
+6. **단순 가격 변동 보도 제외** — "오늘 N% 올랐다/내렸다"만으로는 뉴스로 취급하지 않음. 변동의 근본 사건(실적, 정책, 사고, 규제 등)이 명시된 보도만 수집.
+
+## Watchlist 출력 추가 필드
+
+기존 `events[]` 항목에 다음 필드 추가:
+- `affects_watchlist`: 영향받는 watchlist 항목 ticker 리스트 (없으면 `[]`)
+- `is_watchlist_specific`: 카테고리 4개에는 안 들어가고 watchlist에만 해당하는 사건이면 `true`
 
 ## 출력
 - 파일: `_workspace/01_collected.json`

@@ -40,6 +40,35 @@ cross-verifier가 검증한 HIGH/MEDIUM 등급 사건이 미국 주식 시장에
 
 ## 입력
 - `_workspace/02_verified.json` — verifier가 검증한 사건 리스트 (HIGH/MEDIUM만 분석, LOW/DROP은 스킵)
+- `watchlist.yaml` (repo 루트) — 사용자 관심 종목·지수 리스트
+
+## Watchlist 종목·지수 영향 분석 규칙
+
+verifier의 events 중 `affects_watchlist`가 비어있지 않거나 `is_watchlist_specific: true`인 항목은 **해당 종목/지수에 대한 직접 영향**을 추가로 분석:
+
+1. **종목별 영향(stock):** 매크로 영향과 별개로, 해당 기업의 매출·실적·가이던스·주가에 미치는 영향을 종목 관점에서 평가. 예: "엔비디아 — 수출통제 강화 시 중국 매출 비중(약 17%)에 직접 타격, 단기 -3~5% 갭 다운 가능".
+2. **지수별 영향(index):** 지수 구성 비중 측면에서 평가. 예: "S&P 500 — IT 비중 28% 중 핵심 5개 종목 하락 시 지수 -1~1.5% 영향".
+3. **카테고리 영향과의 관계 명시:** 같은 사건이 카테고리(예: 무역)에서 매크로 분석되었으면, watchlist 분석 부분에 "→ 무역 섹션 참조" 표기 후 종목 직접 영향만 추가로 기록.
+4. **추측 금지 원칙은 동일:** 영향 경로(transmission chain) 명시, 반사실 1줄, 추천(buy/sell) 절대 금지.
+
+## Watchlist 출력 추가 필드
+
+기존 `events[].market_impact`에 다음 필드 추가:
+
+```json
+"watchlist_impact": [
+  {
+    "ticker": "NVDA",
+    "name": "NVIDIA",
+    "direct_impact": "negative",
+    "intensity": "high",
+    "reason": "중국 매출 비중 약 17%, AI 칩 수출통제 직접 대상",
+    "horizon_short": "당일 -3~5% 갭 다운 가능",
+    "horizon_mid": "1~2분기 매출 가이던스 하향 조정 압력",
+    "counter_narrative": "동남아 우회 생산 가속화 시 영향 완화"
+  }
+]
+```
 
 ## 출력
 - 파일: `_workspace/03_analyzed.json`
