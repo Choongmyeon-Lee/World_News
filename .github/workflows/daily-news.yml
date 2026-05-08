@@ -68,6 +68,11 @@ jobs:
           claude_code_oauth_token: ${{ steps.token.outputs.value }}
           # cron / workflow_dispatch 자동 실행은 'agent' 모드 사용.
           mode: agent
+          # ⚠️ agent 모드는 기본으로 WebSearch/WebFetch를 disallow함. 본 하네스는 이 두 도구가 필수
+          # (뉴스 수집·URL 실재성 검증)이므로 반드시 명시적으로 허용해야 한다. 누락 시 모델이 도구
+          # 호출에 모두 실패하여 "WebSearch 기능 부재"로 빈 보고서를 생성하거나 학습 데이터로
+          # hallucinate한다 (2026-05-08 v1~v3 사례).
+          allowed_tools: "WebSearch,WebFetch,Read,Write,Edit,Bash,Glob,Grep"
           direct_prompt: |
             오늘은 ${{ env.REPORT_DATE_KST }} (KST). 자동 실행이며 사용자 상호작용 없음.
 
